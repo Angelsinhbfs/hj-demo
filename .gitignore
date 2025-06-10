@@ -63,3 +63,7 @@ crashlytics-build.properties
 
 
 .idea/.idea.HumanJoystick/.idea/
+
+.vscode/
+
+.idea/.idea.hj-demo/.idea/

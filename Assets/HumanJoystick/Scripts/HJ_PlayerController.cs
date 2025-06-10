@@ -8,7 +8,8 @@ namespace HumanJoystick.Scripts
         public GameObject hmd;
         public GameObject locomotion;
         public GameObject root;
-        public float linearSpeed;
+        public float speedRamp;
+        public float maxSpeed;
         public float rotSpeed;
         public float slowing;
         public float deadZone;
@@ -30,11 +31,12 @@ namespace HumanJoystick.Scripts
 
         private void GatherInput()
         {
-            var hmdLocal = locomotion.transform.worldToLocalMatrix * hmd.transform.position;
+            var hmdLocal = locomotion.transform.InverseTransformPoint(hmd.transform.position);
+            print($"Hmd local position {hmdLocal}");
             var projectedPos = new Vector2(hmdLocal.x, hmdLocal.z);
             var displacement = projectedPos.magnitude;
 
-            inputSpeed = Mathf.Lerp(0, linearSpeed, (displacement - deadZone) / (distanceCap - deadZone));
+            inputSpeed = Mathf.Lerp(0, speedRamp, (displacement - deadZone) / (distanceCap - deadZone));
             print($"input speed: {inputSpeed}");
             inputDir = displacement > deadZone ? projectedPos : Vector2.zero;
             print($"input direction {inputDir.x}, {inputDir.y}");
@@ -50,11 +52,14 @@ namespace HumanJoystick.Scripts
             }
             else
             {
+                var impulse = locomotion.transform.TransformDirection(inputDir.x, 0, inputDir.y) * inputSpeed *
+                              Time.deltaTime;
+                root.GetComponent<Rigidbody>().AddForce(impulse.x, 0, impulse.z,ForceMode.VelocityChange);
                 var velocity = root.GetComponent<Rigidbody>().linearVelocity;
-                velocity += (Vector3)(locomotion.transform.localToWorldMatrix * new Vector3(inputDir.x, 0, inputDir.y) * inputSpeed);
-                if (velocity.magnitude > linearSpeed)
+                
+                if (velocity.magnitude > maxSpeed)
                 {
-                    velocity = velocity.normalized * linearSpeed;
+                    velocity = velocity.normalized * maxSpeed;
                 }
 
                 root.GetComponent<Rigidbody>().linearVelocity = velocity;
